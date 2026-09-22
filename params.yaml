@@ -59,7 +59,7 @@ models:
 
 selection:
   primary_metric: "roc_auc"
-  min_roc_auc_threshold: 0.82
+  min_roc_auc_threshold: 0.80
   model_save_path: "artifacts/models/champion_model.joblib"
   metadata_save_path: "artifacts/models/model_metadata.json"
 

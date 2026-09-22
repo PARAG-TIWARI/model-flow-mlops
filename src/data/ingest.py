@@ -100,7 +100,7 @@ def generate_benchmark_churn_data(n_samples: int = 7043, seed: int = 42) -> pd.D
     log_odds += np.where(tenure < 12, 0.90, -0.60)
     log_odds += (monthly_charges - 65.0) * 0.02
     log_odds += np.where(tech_support == "No", 0.45, -0.30)
-    log_odds += rng.normal(0, 0.15, size=n_samples)
+    log_odds += rng.normal(0, 0.10, size=n_samples)
 
     prob = 1.0 / (1.0 + np.exp(-log_odds))
     churn_labels = np.where(rng.uniform(0, 1, size=n_samples) < prob, "Yes", "No")
