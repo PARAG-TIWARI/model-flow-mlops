@@ -1,0 +1,81 @@
+data:
+  raw_path: "data/raw/telco_churn_raw.csv"
+  processed_train_path: "data/processed/train.csv"
+  processed_val_path: "data/processed/val.csv"
+  processed_test_path: "data/processed/test.csv"
+  reference_path: "data/reference/reference_baseline.csv"
+  target_column: "Churn"
+  id_column: "customerID"
+  train_split: 0.70
+  val_split: 0.15
+  test_split: 0.15
+  random_state: 42
+
+features:
+  numerical:
+    - "tenure"
+    - "MonthlyCharges"
+    - "TotalCharges"
+  categorical:
+    - "gender"
+    - "SeniorCitizen"
+    - "Partner"
+    - "Dependents"
+    - "PhoneService"
+    - "MultipleLines"
+    - "InternetService"
+    - "OnlineSecurity"
+    - "OnlineBackup"
+    - "DeviceProtection"
+    - "TechSupport"
+    - "StreamingTV"
+    - "StreamingMovies"
+    - "Contract"
+    - "PaperlessBilling"
+    - "PaymentMethod"
+
+models:
+  logistic_regression:
+    name: "Calibrated Logistic Regression"
+    type: "logistic_regression"
+    C: 0.75
+    max_iter: 1000
+    solver: "lbfgs"
+  random_forest:
+    name: "Tuned Random Forest"
+    type: "random_forest"
+    n_estimators: 120
+    max_depth: 8
+    min_samples_split: 5
+    random_state: 42
+  hist_gradient_boosting:
+    name: "HistGradientBoosting Classifier"
+    type: "hist_gradient_boosting"
+    learning_rate: 0.08
+    max_iter: 150
+    max_depth: 6
+    min_samples_leaf: 20
+    random_state: 42
+
+selection:
+  primary_metric: "roc_auc"
+  min_roc_auc_threshold: 0.82
+  model_save_path: "artifacts/models/champion_model.joblib"
+  metadata_save_path: "artifacts/models/model_metadata.json"
+
+mlflow:
+  tracking_uri: "sqlite:///mlflow.db"
+  experiment_name: "modelflow-customer-churn"
+  registered_model_name: "CustomerChurnClassifier"
+
+evaluation:
+  metrics_output: "artifacts/reports/evaluation_metrics.json"
+  confusion_matrix_plot: "artifacts/reports/confusion_matrix.png"
+  roc_curve_plot: "artifacts/reports/roc_curve.png"
+  feature_importance_plot: "artifacts/reports/feature_importance.png"
+
+monitoring:
+  reference_path: "data/processed/train.csv"
+  drift_report_path: "artifacts/reports/drift_report.json"
+  psi_drift_threshold: 0.15
+  ks_pvalue_threshold: 0.05

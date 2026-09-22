@@ -1,0 +1,28 @@
+project:
+  name: "ModelFlow MLOps"
+  version: "1.0.0"
+  description: "Reproducible Machine Learning Training, Tracking, Serving and Monitoring Platform"
+  author: "ModelFlow Team"
+
+dataset:
+  name: "Telco Customer Churn"
+  source: "IBM Watson Open Data Sample"
+  license: "Apache 2.0 / CC0"
+  total_samples: 7043
+  features_count: 19
+  target: "Churn"
+  positive_class: "Yes"
+  negative_class: "No"
+
+pipeline:
+  seed: 42
+  stratify: true
+  cv_folds: 5
+  champion_metric: "roc_auc"
+  promotion_gate: 0.82
+
+server:
+  host: "0.0.0.0"
+  port: 8000
+  reload: false
+  workers: 1

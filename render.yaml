@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: modelflow-mlops-api
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: "pip install -r requirements.txt && python -m scripts.run_pipeline"
+    startCommand: "uvicorn api.main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: MODEL_PATH
+        value: artifacts/models/champion_model.joblib
+      - key: METADATA_PATH
+        value: artifacts/models/model_metadata.json
+      - key: REFERENCE_DATA_PATH
+        value: data/processed/train.csv
+      - key: MLFLOW_TRACKING_URI
+        value: sqlite:///mlflow.db

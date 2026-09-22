@@ -1,0 +1,131 @@
+{
+  "has_drift": false,
+  "overall_status": "Stable",
+  "features_analyzed": 19,
+  "drifted_features_count": 0,
+  "drift_percentage": 0.0,
+  "reference_samples": 4930,
+  "current_samples": 1057,
+  "feature_reports": {
+    "tenure": {
+      "type": "numerical",
+      "drift_detected": false,
+      "psi": 0.0058,
+      "ks_statistic": 0.0229,
+      "p_value": 0.73916,
+      "severity": "Low"
+    },
+    "MonthlyCharges": {
+      "type": "numerical",
+      "drift_detected": false,
+      "psi": 0.0159,
+      "ks_statistic": 0.0409,
+      "p_value": 0.10553,
+      "severity": "Low"
+    },
+    "TotalCharges": {
+      "type": "numerical",
+      "drift_detected": false,
+      "psi": 0.0174,
+      "ks_statistic": 0.0247,
+      "p_value": 0.65289,
+      "severity": "Low"
+    },
+    "gender": {
+      "type": "categorical",
+      "drift_detected": false,
+      "psi": 0.0015,
+      "severity": "Low"
+    },
+    "SeniorCitizen": {
+      "type": "categorical",
+      "drift_detected": false,
+      "psi": 0.0006,
+      "severity": "Low"
+    },
+    "Partner": {
+      "type": "categorical",
+      "drift_detected": false,
+      "psi": 0.0001,
+      "severity": "Low"
+    },
+    "Dependents": {
+      "type": "categorical",
+      "drift_detected": false,
+      "psi": 0.0009,
+      "severity": "Low"
+    },
+    "PhoneService": {
+      "type": "categorical",
+      "drift_detected": false,
+      "psi": 0.0009,
+      "severity": "Low"
+    },
+    "MultipleLines": {
+      "type": "categorical",
+      "drift_detected": false,
+      "psi": 0.0026,
+      "severity": "Low"
+    },
+    "InternetService": {
+      "type": "categorical",
+      "drift_detected": false,
+      "psi": 0.0024,
+      "severity": "Low"
+    },
+    "OnlineSecurity": {
+      "type": "categorical",
+      "drift_detected": false,
+      "psi": 0.0006,
+      "severity": "Low"
+    },
+    "OnlineBackup": {
+      "type": "categorical",
+      "drift_detected": false,
+      "psi": 0.0009,
+      "severity": "Low"
+    },
+    "DeviceProtection": {
+      "type": "categorical",
+      "drift_detected": false,
+      "psi": 0.0006,
+      "severity": "Low"
+    },
+    "TechSupport": {
+      "type": "categorical",
+      "drift_detected": false,
+      "psi": 0.0043,
+      "severity": "Low"
+    },
+    "StreamingTV": {
+      "type": "categorical",
+      "drift_detected": false,
+      "psi": 0.005,
+      "severity": "Low"
+    },
+    "StreamingMovies": {
+      "type": "categorical",
+      "drift_detected": false,
+      "psi": 0.0053,
+      "severity": "Low"
+    },
+    "Contract": {
+      "type": "categorical",
+      "drift_detected": false,
+      "psi": 0.0003,
+      "severity": "Low"
+    },
+    "PaperlessBilling": {
+      "type": "categorical",
+      "drift_detected": false,
+      "psi": 0.0013,
+      "severity": "Low"
+    },
+    "PaymentMethod": {
+      "type": "categorical",
+      "drift_detected": false,
+      "psi": 0.0002,
+      "severity": "Low"
+    }
+  }
+}

@@ -1,0 +1,201 @@
+schema: '2.0'
+stages:
+  data_ingestion:
+    cmd: python -m src.data.ingest
+    deps:
+    - path: params.yaml
+      hash: md5
+      md5: 4471df08cc54312bc0aa3e500bd7ad56
+      size: 2114
+    - path: src/data/ingest.py
+      hash: md5
+      md5: 921785c59fff4c141316b90a1a5cd5a6
+      size: 7677
+    params:
+      params.yaml:
+        data.random_state: 42
+        data.raw_path: data/raw/telco_churn_raw.csv
+    outs:
+    - path: data/raw/telco_churn_raw.csv
+      hash: md5
+      md5: 75febd9891bf612d71be94187184c90b
+      size: 978974
+  data_preprocessing:
+    cmd: python -m src.data.loader
+    deps:
+    - path: data/raw/telco_churn_raw.csv
+      hash: md5
+      md5: 75febd9891bf612d71be94187184c90b
+      size: 978974
+    - path: params.yaml
+      hash: md5
+      md5: 4471df08cc54312bc0aa3e500bd7ad56
+      size: 2114
+    - path: src/data/loader.py
+      hash: md5
+      md5: 743eaa81a5d2a76111ac4914c881e694
+      size: 5462
+    - path: src/data/validator.py
+      hash: md5
+      md5: 04f8b32c8c10ab8ee0c60c24094b5a36
+      size: 3971
+    params:
+      params.yaml:
+        data.random_state: 42
+        data.test_split: 0.15
+        data.train_split: 0.7
+        data.val_split: 0.15
+    outs:
+    - path: data/processed/test.csv
+      hash: md5
+      md5: d29f3986c81f6a24bcf67ff730f4e38d
+      size: 134679
+    - path: data/processed/train.csv
+      hash: md5
+      md5: 28691f1d6c8a5004e293000dac8d5bfb
+      size: 625373
+    - path: data/processed/val.csv
+      hash: md5
+      md5: 35442cbc83c3bff413e7e4a463e0c78d
+      size: 133026
+    - path: data/reference/reference_baseline.csv
+      hash: md5
+      md5: 28691f1d6c8a5004e293000dac8d5bfb
+      size: 625373
+  training:
+    cmd: python -m src.training.trainer
+    deps:
+    - path: data/processed/train.csv
+      hash: md5
+      md5: 28691f1d6c8a5004e293000dac8d5bfb
+      size: 625373
+    - path: data/processed/val.csv
+      hash: md5
+      md5: 35442cbc83c3bff413e7e4a463e0c78d
+      size: 133026
+    - path: params.yaml
+      hash: md5
+      md5: 4471df08cc54312bc0aa3e500bd7ad56
+      size: 2114
+    - path: src/features/preprocessor.py
+      hash: md5
+      md5: 226ae079018f1fc4840a20eb0ad93c00
+      size: 3243
+    - path: src/training/pipeline.py
+      hash: md5
+      md5: 0b2eacefb7f1dcd9113d7fe4ac3b1765
+      size: 2233
+    - path: src/training/registry.py
+      hash: md5
+      md5: 7c244f93eaefdedac98dbf4dacd2c77f
+      size: 6110
+    - path: src/training/trainer.py
+      hash: md5
+      md5: 8045bd60b5eeb8b0f2ad491e91382a91
+      size: 5151
+    params:
+      params.yaml:
+        mlflow:
+          tracking_uri: sqlite:///mlflow.db
+          experiment_name: modelflow-customer-churn
+          registered_model_name: CustomerChurnClassifier
+        models:
+          logistic_regression:
+            name: Calibrated Logistic Regression
+            type: logistic_regression
+            C: 0.75
+            max_iter: 1000
+            solver: lbfgs
+          random_forest:
+            name: Tuned Random Forest
+            type: random_forest
+            n_estimators: 120
+            max_depth: 8
+            min_samples_split: 5
+            random_state: 42
+          hist_gradient_boosting:
+            name: HistGradientBoosting Classifier
+            type: hist_gradient_boosting
+            learning_rate: 0.08
+            max_iter: 150
+            max_depth: 6
+            min_samples_leaf: 20
+            random_state: 42
+        selection:
+          primary_metric: roc_auc
+          min_roc_auc_threshold: 0.82
+          model_save_path: artifacts/models/champion_model.joblib
+          metadata_save_path: artifacts/models/model_metadata.json
+    outs:
+    - path: artifacts/models/champion_model.joblib
+      hash: md5
+      md5: 5495e6fcbe6c902beede4ff4856bcb57
+      size: 8634
+    - path: artifacts/models/model_metadata.json
+      hash: md5
+      md5: 120f7f25b0287cbd5c3e1b8ea9842873
+      size: 1495
+  evaluation:
+    cmd: python -m src.evaluation.evaluator
+    deps:
+    - path: artifacts/models/champion_model.joblib
+      hash: md5
+      md5: 5495e6fcbe6c902beede4ff4856bcb57
+      size: 8634
+    - path: data/processed/test.csv
+      hash: md5
+      md5: d29f3986c81f6a24bcf67ff730f4e38d
+      size: 134679
+    - path: params.yaml
+      hash: md5
+      md5: 4471df08cc54312bc0aa3e500bd7ad56
+      size: 2114
+    - path: src/evaluation/evaluator.py
+      hash: md5
+      md5: ecd50b65f21c8e81191cd611a8162ebd
+      size: 7184
+    - path: src/evaluation/metrics.py
+      hash: md5
+      md5: f43937924d8b03e17ac2d3fab889f5ff
+      size: 1878
+    outs:
+    - path: artifacts/reports/confusion_matrix.png
+      hash: md5
+      md5: 606bc807f129296e80fe4376875952a8
+      size: 51441
+    - path: artifacts/reports/evaluation_metrics.json
+      hash: md5
+      md5: ed44d02e547c6947f8686957df88c242
+      size: 625
+    - path: artifacts/reports/feature_importance.png
+      hash: md5
+      md5: dd452a9f70654742dfc08f1148be3499
+      size: 80455
+    - path: artifacts/reports/roc_curve.png
+      hash: md5
+      md5: 312e75bfdcf14d1d7199fdc907aa7f1f
+      size: 79683
+  drift_analysis:
+    cmd: python -m src.monitoring.drift
+    deps:
+    - path: data/processed/test.csv
+      hash: md5
+      md5: d29f3986c81f6a24bcf67ff730f4e38d
+      size: 134679
+    - path: data/processed/train.csv
+      hash: md5
+      md5: 28691f1d6c8a5004e293000dac8d5bfb
+      size: 625373
+    - path: params.yaml
+      hash: md5
+      md5: 4471df08cc54312bc0aa3e500bd7ad56
+      size: 2114
+    - path: src/monitoring/drift.py
+      hash: md5
+      md5: 71a733ad7aed500e7f4e65c267d288d6
+      size: 7431
+    outs:
+    - path: artifacts/reports/drift_report.json
+      hash: md5
+      md5: a1a35f41910a8b43623d9b016ae3153c
+      size: 3055
