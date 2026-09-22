@@ -1,7 +1,15 @@
 """End-to-end pipeline execution script for ModelFlow MLOps."""
 
 import logging
+import os
+import sys
 import time
+from pathlib import Path
+
+# Ensure project root is in sys.path for reliable module resolution across all environments
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("modelflow.pipeline")
@@ -51,4 +59,15 @@ def run_full_pipeline():
 
 
 if __name__ == "__main__":
-    run_full_pipeline()
+    import traceback
+    try:
+        run_full_pipeline()
+    except Exception:
+        err_msg = traceback.format_exc()
+        print(err_msg, file=sys.stderr)
+        summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+        if summary_path:
+            with open(summary_path, "a", encoding="utf-8") as f:
+                f.write(f"### Pipeline Execution Error\n```\n{err_msg}\n```\n")
+        sys.exit(1)
+

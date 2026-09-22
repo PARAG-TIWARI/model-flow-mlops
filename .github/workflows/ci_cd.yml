@@ -45,6 +45,9 @@ jobs:
     name: Unit & Integration Tests
     runs-on: ubuntu-latest
     needs: code-quality
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+      PYTHONUNBUFFERED: "1"
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -62,7 +65,7 @@ jobs:
 
       - name: Run Data & Pipeline Preparation
         run: |
-          python -m scripts.run_pipeline
+          python scripts/run_pipeline.py
 
       - name: Execute Pytest Suite with Coverage
         run: |

@@ -1,12 +1,19 @@
 """Simulates real-time inference streaming to test operational metrics and drift detection."""
 
 import logging
+import sys
 import time
+from pathlib import Path
 
 import pandas as pd
 import requests
 
-from src.config.settings import BASE_DIR, load_yaml_params
+# Ensure project root is in sys.path
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from src.config.settings import BASE_DIR, load_yaml_params  # noqa: E402
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("modelflow.simulation")
