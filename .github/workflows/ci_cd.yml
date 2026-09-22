@@ -11,9 +11,11 @@ on:
       - "configs/**"
       - "params.yaml"
       - "dvc.yaml"
+      - "dvc.lock"
       - "requirements.txt"
       - "Dockerfile"
       - "pyproject.toml"
+      - "README.md"
       - ".github/workflows/**"
   pull_request:
     branches: [main]

@@ -43,7 +43,7 @@ ModelFlow MLOps resolves these challenges through a modular, decoupled architect
 
 - **Reproducible Pipeline Orchestration**: DVC (`dvc.yaml`) automates and caches data ingestion, validation, preprocessing, training, evaluation, and drift analysis.
 - **Systematic Experiment Tracking**: MLflow logs candidate architectures, parameters, metrics, confusion matrix plots, and manages model artifacts.
-- **Production-Grade Serving**: FastAPI delivers sub-5ms inference with Pydantic v2 validation, structured risk tiers, and OpenAPI documentation.
+- **Production-Grade Serving**: FastAPI delivers low-latency inference (11.21 ms mean, 6.43 ms p50 verified locally) with Pydantic v2 validation, structured risk tiers, and OpenAPI documentation.
 - **Real-Time Telemetry & Drift Detection**: Automated statistical tests (Kolmogorov-Smirnov test and Population Stability Index for numerical features; Chi-Square for categorical features) monitor live inference payloads against baseline distributions.
 - **Interactive Monitoring Dashboard**: Modern React + TypeScript + Vite + Tailwind CSS interface displaying real-time metrics, live prediction simulator, and MLflow experiment leaderboards.
 
@@ -503,7 +503,13 @@ ModelFlow achieves competitive retention classification on the standard Telco be
 - **Validation ROC-AUC**: `0.8448`
 - **Held-out Test ROC-AUC**: `0.8447`
 - **Held-out Recall**: `77.66%`
-- **Mean Inference Latency**: `< 3.0 ms`
+- **Inference Latency (LOCAL Verification Results)**:
+  - **Sample Benchmark**: 50 real inference requests
+  - **Success Rate**: 100%
+  - **Mean Latency**: 11.21 ms
+  - **P50 Latency**: 6.43 ms
+  - **P95 Latency**: 22.80 ms
+  - **P99 Latency**: 39.04 ms
 - **Test Pass Rate**: `100% (28/28 passing)`
 - **Clean-Room Audit**: `0 reference remnants found`
 

@@ -133,7 +133,7 @@ stages:
       size: 8634
     - path: artifacts/models/model_metadata.json
       hash: md5
-      md5: 4430da84387bf3977dc8d64d245c5e1a
+      md5: e866c4a1705106d007abd10824cac21b
       size: 1495
   evaluation:
     cmd: python -m src.evaluation.evaluator
