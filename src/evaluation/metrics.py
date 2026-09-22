@@ -1,6 +1,7 @@
 """Classification metrics calculation utilities."""
 
 from typing import Any, Dict
+
 import numpy as np
 from sklearn.metrics import (
     accuracy_score,
@@ -19,12 +20,12 @@ def compute_classification_metrics(
     y_prob: np.ndarray,
 ) -> Dict[str, Any]:
     """Compute comprehensive classification performance metrics.
-    
+
     Args:
         y_true: Ground truth binary labels (0 or 1).
         y_pred: Predicted discrete binary labels (0 or 1).
         y_prob: Predicted probabilities for the positive class (1).
-        
+
     Returns:
         Dictionary containing all evaluation metrics and confusion matrix values.
     """

@@ -1,6 +1,7 @@
 """Unit tests for model lifecycle manager."""
 
 import pytest
+
 from src.config.settings import BASE_DIR
 from src.serving.manager import ModelManager
 

@@ -1,9 +1,11 @@
 """Inference endpoints for real-time and batch customer churn predictions."""
 
 import logging
+
 from fastapi import APIRouter, HTTPException, status
-from api.schemas.request import CustomerFeatures, BatchInferenceRequest
-from api.schemas.response import PredictionResponse, BatchPredictionResponse
+
+from api.schemas.request import BatchInferenceRequest, CustomerFeatures
+from api.schemas.response import BatchPredictionResponse, PredictionResponse
 from src.serving.predictor import predictor
 
 logger = logging.getLogger("modelflow.api.predict")

@@ -2,8 +2,10 @@
 
 import logging
 import time
-import requests
+
 import pandas as pd
+import requests
+
 from src.config.settings import BASE_DIR, load_yaml_params
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")

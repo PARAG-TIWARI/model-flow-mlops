@@ -1,6 +1,7 @@
 """Pydantic request schemas for inference validation."""
 
 from typing import List, Literal, Optional
+
 from pydantic import BaseModel, Field, model_validator
 
 

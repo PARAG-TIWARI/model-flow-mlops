@@ -2,8 +2,10 @@
 
 import json
 import logging
+
 from fastapi import APIRouter
-from api.schemas.response import OperationalMetricsResponse, DriftReportResponse
+
+from api.schemas.response import DriftReportResponse, OperationalMetricsResponse
 from src.config.settings import BASE_DIR, load_yaml_params
 from src.monitoring.drift import DriftDetector
 from src.monitoring.metrics_collector import operational_metrics

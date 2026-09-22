@@ -6,8 +6,8 @@ Can retrieve from public open-source repository or synthesize the full benchmark
 
 import io
 import logging
-from pathlib import Path
 import urllib.request
+from pathlib import Path
 from typing import Optional
 
 import numpy as np

@@ -13,6 +13,8 @@ def test_determine_risk_tier():
 
     tier_med, rec_med = predictor._determine_risk_tier(0.50)
     assert tier_med == "Medium Risk"
+    assert "engagement" in rec_med.lower()
 
     tier_low, rec_low = predictor._determine_risk_tier(0.15)
     assert tier_low == "Low Risk"
+    assert "stable" in rec_low.lower()

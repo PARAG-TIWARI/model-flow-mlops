@@ -1,6 +1,7 @@
 """Health and readiness check endpoints."""
 
 import time
+
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
 

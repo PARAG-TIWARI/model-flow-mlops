@@ -116,7 +116,7 @@ def train_all_models() -> Dict[str, Any]:
             champion_run_id = run_id
 
     logger.info("\n================ MODEL SELECTION SUMMARY ================")
-    for k, v in results.items():
+    for v in results.values():
         logger.info(f"Model: {v['name']} -> {primary_metric.upper()}: {v['score']:.4f}")
     logger.info(f"Champion: {models_cfg[champion_key].get('name')} with {primary_metric}={champion_score:.4f}")
 

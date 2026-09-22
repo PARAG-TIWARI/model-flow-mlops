@@ -1,6 +1,7 @@
 """Unit tests for data validation and schema integrity."""
 
 import pandas as pd
+
 from src.data.validator import DataValidator
 
 

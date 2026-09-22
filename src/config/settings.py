@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
 import yaml
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict

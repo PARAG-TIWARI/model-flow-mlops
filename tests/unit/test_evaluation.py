@@ -1,6 +1,7 @@
 """Unit tests for classification metrics and evaluation math."""
 
 import numpy as np
+
 from src.evaluation.metrics import compute_classification_metrics
 
 

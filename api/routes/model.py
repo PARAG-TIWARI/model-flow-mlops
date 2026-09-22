@@ -1,6 +1,7 @@
 """Model metadata and schema endpoints."""
 
 from fastapi import APIRouter, HTTPException
+
 from api.schemas.response import ModelMetadataResponse
 from src.config.settings import load_yaml_params
 from src.serving.manager import model_manager

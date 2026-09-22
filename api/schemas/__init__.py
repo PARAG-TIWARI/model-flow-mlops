@@ -1,12 +1,12 @@
 """API schemas module exports."""
-from api.schemas.request import CustomerFeatures, BatchInferenceRequest
+from api.schemas.request import BatchInferenceRequest, CustomerFeatures
 from api.schemas.response import (
-    HealthResponse,
-    PredictionResponse,
     BatchPredictionResponse,
+    DriftReportResponse,
+    HealthResponse,
     ModelMetadataResponse,
     OperationalMetricsResponse,
-    DriftReportResponse,
+    PredictionResponse,
 )
 
 __all__ = [

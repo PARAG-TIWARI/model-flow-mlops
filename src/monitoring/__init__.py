@@ -1,5 +1,5 @@
 """Monitoring and statistical drift detection module."""
-from src.monitoring.drift import DriftDetector, compute_psi, calculate_dataset_drift
+from src.monitoring.drift import DriftDetector, calculate_dataset_drift, compute_psi
 from src.monitoring.metrics_collector import MetricsCollector, operational_metrics
 
 __all__ = [

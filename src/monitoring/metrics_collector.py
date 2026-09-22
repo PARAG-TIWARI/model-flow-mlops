@@ -1,11 +1,12 @@
 """In-memory operational metrics collector for real-time serving telemetry."""
 
-from collections import deque
-from datetime import datetime, timezone
 import logging
 import threading
 import time
+from collections import deque
+from datetime import datetime, timezone
 from typing import Any, Deque, Dict
+
 import numpy as np
 
 logger = logging.getLogger("modelflow.monitoring.metrics")

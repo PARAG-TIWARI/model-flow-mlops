@@ -1,14 +1,15 @@
 """FastAPI Main Application for ModelFlow MLOps Platform."""
 
-from contextlib import asynccontextmanager
 import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.routes.health import router as health_router
+from api.routes.metrics import router as metrics_router
 from api.routes.model import router as model_router
 from api.routes.predict import router as predict_router
-from api.routes.metrics import router as metrics_router
 from src.config.settings import settings
 from src.serving.manager import model_manager
 

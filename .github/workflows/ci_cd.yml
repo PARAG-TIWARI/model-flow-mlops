@@ -7,11 +7,14 @@ on:
       - "src/**"
       - "api/**"
       - "tests/**"
+      - "scripts/**"
       - "configs/**"
       - "params.yaml"
       - "dvc.yaml"
       - "requirements.txt"
       - "Dockerfile"
+      - "pyproject.toml"
+      - ".github/workflows/**"
   pull_request:
     branches: [main]
 
@@ -32,11 +35,11 @@ jobs:
       - name: Install Linting Tools
         run: |
           python -m pip install --upgrade pip
-          pip install ruff
+          pip install ruff==0.16.8
 
       - name: Run Ruff Linter
         run: |
-          ruff check src api tests
+          ruff check src api tests scripts
 
   test-and-validate:
     name: Unit & Integration Tests

@@ -1,10 +1,11 @@
 """MLflow tracking integration and model registry management."""
 
-from datetime import datetime, timezone
 import json
 import logging
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
+
 import joblib
 import mlflow
 import mlflow.sklearn
