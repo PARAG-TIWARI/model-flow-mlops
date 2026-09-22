@@ -14,6 +14,8 @@ on:
       - "dvc.lock"
       - "requirements.txt"
       - "Dockerfile"
+      - ".dockerignore"
+      - "render.yaml"
       - "pyproject.toml"
       - "README.md"
       - ".github/workflows/**"
@@ -115,9 +117,23 @@ jobs:
           context: .
           file: ./Dockerfile
           push: false
+          load: true
           tags: modelflow-mlops:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Test Docker Container Ingestion & Serving
+        run: |
+          docker run -d --name test-api -p 8000:8000 modelflow-mlops:latest
+          sleep 6
+          docker logs test-api
+          curl -f http://localhost:8000/health
+          curl -f http://localhost:8000/health/ready
+          curl -f http://localhost:8000/model
+          curl -f -X POST http://localhost:8000/predict \
+            -H "Content-Type: application/json" \
+            -d '{"gender":"Female","SeniorCitizen":0,"Partner":"Yes","Dependents":"No","tenure":12,"PhoneService":"Yes","MultipleLines":"No","InternetService":"Fiber optic","OnlineSecurity":"No","OnlineBackup":"Yes","DeviceProtection":"No","TechSupport":"No","StreamingTV":"Yes","StreamingMovies":"Yes","Contract":"Month-to-month","PaperlessBilling":"Yes","PaymentMethod":"Electronic check","MonthlyCharges":89.85,"TotalCharges":1078.20}'
+          docker stop test-api
 
   deploy-staging:
     name: Deploy to Production / Staging

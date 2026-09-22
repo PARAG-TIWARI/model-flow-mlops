@@ -270,8 +270,8 @@ ModelFlow implements an in-memory, thread-safe metrics collector (`MetricsCollec
 ## Docker
 
 Production multi-stage `Dockerfile`:
-- **Builder Stage**: Builds Python virtual environment with pinned dependencies.
-- **Runner Stage**: Minimal `python:3.12-slim` image running under an unprivileged user (`mlopsuser:mlopsgroup`).
+- **Builder Stage**: Installs pinned dependencies, executes the end-to-end training pipeline (`python -m scripts.run_pipeline`), and runs build-time assertions verifying `champion_model.joblib`, `model_metadata.json`, and reference datasets.
+- **Runner Stage**: Minimal `python:3.12-slim` image that copies verified artifacts, datasets, and MLflow SQLite database from the builder stage, running under an unprivileged user (`mlopsuser:mlopsgroup`).
 - **Healthcheck**: Configured `HEALTHCHECK` instruction using curl.
 
 Run with Docker Compose:
@@ -340,9 +340,9 @@ tests/unit/test_preprocessing.py::test_preprocessor_feature_names_out PASSED
 
 ## Deployment
 
-- **Backend (FastAPI)**: Configured for Render via `render.yaml`. Binds dynamically to `0.0.0.0:$PORT`.
+- **Backend (FastAPI)**: Configured for Render via `render.yaml` with `runtime: docker` using multi-stage `Dockerfile`. Binds dynamically to `0.0.0.0:$PORT`.
 - **Frontend (Vite + React)**: Configured for Vercel via `vercel.json` with client-side SPA routing.
-- **Environment Configuration**: Set `VITE_API_BASE_URL` in the frontend to point to the production backend URL.
+- **Environment Configuration**: Set `VITE_API_BASE_URL` in the frontend (e.g. `https://model-flow-mlops.onrender.com`) to point to the production backend URL. Render web service permits CORS requests from `https://model-flow-mlops.vercel.app`.
 
 ---
 

@@ -1,17 +1,19 @@
 services:
   - type: web
     name: modelflow-mlops-api
-    runtime: python
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     region: oregon
     plan: free
-    buildCommand: "pip install -r requirements.txt && python -m scripts.run_pipeline"
-    startCommand: "uvicorn api.main:app --host 0.0.0.0 --port $PORT"
     healthCheckPath: /health
     envVars:
       - key: ENVIRONMENT
         value: production
       - key: HOST
         value: 0.0.0.0
+      - key: PORT
+        value: 8000
       - key: MODEL_PATH
         value: artifacts/models/champion_model.joblib
       - key: METADATA_PATH
@@ -20,3 +22,5 @@ services:
         value: data/processed/train.csv
       - key: MLFLOW_TRACKING_URI
         value: sqlite:///mlflow.db
+      - key: CORS_ORIGINS
+        value: '["https://model-flow-mlops.vercel.app","http://localhost:3000"]'

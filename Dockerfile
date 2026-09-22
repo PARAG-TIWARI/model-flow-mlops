@@ -2,7 +2,7 @@
 # ModelFlow MLOps — Multi-Stage Production Dockerfile
 # ==============================================================================
 
-# Stage 1: Build Dependencies
+# Stage 1: Build Dependencies & Execute Training Pipeline
 FROM python:3.12-slim AS builder
 
 WORKDIR /build
@@ -25,6 +25,27 @@ ENV PATH="/opt/venv/bin:$PATH"
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt
 
+# Copy source code, scripts, configurations, and pipeline definitions
+COPY src/ ./src/
+COPY scripts/ ./scripts/
+COPY configs/ ./configs/
+COPY params.yaml ./params.yaml
+
+# Set environment variables for pipeline execution
+ENV PYTHONPATH="/build" \
+    PYTHONUNBUFFERED=1
+
+# Execute the complete 5-stage training, evaluation, and drift pipeline
+RUN python -m scripts.run_pipeline
+
+# Verify that champion model and pipeline artifacts exist before proceeding
+RUN test -f artifacts/models/champion_model.joblib && \
+    test -f artifacts/models/model_metadata.json && \
+    test -f artifacts/reports/evaluation_metrics.json && \
+    test -f artifacts/reports/drift_report.json && \
+    test -f data/processed/train.csv && \
+    test -f mlflow.db
+
 # Stage 2: Production Serving Image
 FROM python:3.12-slim AS runner
 
@@ -33,6 +54,7 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:$PATH" \
+    PYTHONPATH="/app" \
     PORT=8000 \
     ENVIRONMENT=production
 
@@ -47,13 +69,22 @@ COPY --from=builder /opt/venv /opt/venv
 # Create non-privileged system user for security
 RUN groupadd -r mlopsgroup && useradd -r -g mlopsgroup -u 10001 mlopsuser
 
-# Copy application source code, configurations, and trained artifacts
+# Copy application source code and configurations
 COPY src/ /app/src/
 COPY api/ /app/api/
 COPY configs/ /app/configs/
 COPY params.yaml /app/params.yaml
-COPY artifacts/ /app/artifacts/
-COPY data/ /app/data/
+
+# Copy trained model artifacts, reports, datasets, and tracking database from builder
+COPY --from=builder /build/artifacts /app/artifacts
+COPY --from=builder /build/data /app/data
+COPY --from=builder /build/mlflow.db /app/mlflow.db
+
+# Build-time verification inside runtime image
+RUN test -f /app/artifacts/models/champion_model.joblib && \
+    test -f /app/artifacts/models/model_metadata.json && \
+    test -f /app/data/processed/train.csv && \
+    test -f /app/mlflow.db
 
 # Adjust file ownership to non-root user
 RUN chown -R mlopsuser:mlopsgroup /app
