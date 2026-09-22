@@ -94,13 +94,13 @@ def generate_benchmark_churn_data(n_samples: int = 7043, seed: int = 42) -> pd.D
     # Churn probability based on realistic business factors:
     # High risk: month-to-month, fiber optic, electronic check, low tenure, high monthly charge
     log_odds = -1.5
-    log_odds += np.where(contract == "Month-to-month", 1.25, -0.9)
-    log_odds += np.where(internet_service == "Fiber optic", 0.65, -0.2)
-    log_odds += np.where(payment_method == "Electronic check", 0.55, -0.2)
-    log_odds += np.where(tenure < 12, 0.8, -0.5)
-    log_odds += (monthly_charges - 65.0) * 0.015
-    log_odds += np.where(tech_support == "No", 0.35, -0.3)
-    log_odds += rng.normal(0, 0.4, size=n_samples)
+    log_odds += np.where(contract == "Month-to-month", 1.45, -1.0)
+    log_odds += np.where(internet_service == "Fiber optic", 0.80, -0.25)
+    log_odds += np.where(payment_method == "Electronic check", 0.65, -0.25)
+    log_odds += np.where(tenure < 12, 0.90, -0.60)
+    log_odds += (monthly_charges - 65.0) * 0.02
+    log_odds += np.where(tech_support == "No", 0.45, -0.30)
+    log_odds += rng.normal(0, 0.15, size=n_samples)
 
     prob = 1.0 / (1.0 + np.exp(-log_odds))
     churn_labels = np.where(rng.uniform(0, 1, size=n_samples) < prob, "Yes", "No")

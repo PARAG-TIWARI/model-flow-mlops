@@ -30,6 +30,8 @@ COPY src/ ./src/
 COPY scripts/ ./scripts/
 COPY configs/ ./configs/
 COPY params.yaml ./params.yaml
+COPY data/ ./data/
+COPY artifacts/ ./artifacts/
 
 # Set environment variables for pipeline execution
 ENV PYTHONPATH="/build" \
