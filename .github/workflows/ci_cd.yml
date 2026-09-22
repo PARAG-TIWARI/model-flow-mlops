@@ -65,15 +65,36 @@ jobs:
 
       - name: Run Data & Pipeline Preparation
         run: |
-          python scripts/run_pipeline.py
+          python scripts/run_pipeline.py 2>&1 | tee pipeline.log || {
+            EXIT_CODE=$?
+            echo "## Pipeline Failure (Exit Code: $EXIT_CODE)" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat pipeline.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            exit $EXIT_CODE
+          }
 
       - name: Execute Pytest Suite with Coverage
         run: |
-          pytest tests/ -v --tb=short --cov=src --cov=api --cov-report=term-missing
+          pytest tests/ -v --tb=short --cov=src --cov=api --cov-report=term-missing 2>&1 | tee pytest.log || {
+            EXIT_CODE=$?
+            echo "## Pytest Failure (Exit Code: $EXIT_CODE)" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat pytest.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            exit $EXIT_CODE
+          }
 
       - name: Verify Clean-Room Originality
         run: |
-          python scripts/check_originality.py
+          python scripts/check_originality.py 2>&1 | tee originality.log || {
+            EXIT_CODE=$?
+            echo "## Originality Check Failure (Exit Code: $EXIT_CODE)" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat originality.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            exit $EXIT_CODE
+          }
 
   docker-build:
     name: Build & Verify Docker Image
