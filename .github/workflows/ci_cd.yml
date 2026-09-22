@@ -112,15 +112,8 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build Production Image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: false
-          load: true
-          tags: modelflow-mlops:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+        run: |
+          docker build --progress=plain -t modelflow-mlops:latest .
 
       - name: Test Docker Container Ingestion & Serving
         run: |

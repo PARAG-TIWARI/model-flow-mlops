@@ -22,10 +22,10 @@ COPY requirements.txt .
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
+RUN /opt/venv/bin/pip install --upgrade pip && \
+    /opt/venv/bin/pip install -r requirements.txt
 
-# Copy source code, scripts, configurations, and pipeline definitions
+# Copy source code, scripts, configurations, data, artifacts, and parameters
 COPY src/ ./src/
 COPY scripts/ ./scripts/
 COPY configs/ ./configs/
@@ -38,15 +38,14 @@ ENV PYTHONPATH="/build" \
     PYTHONUNBUFFERED=1
 
 # Execute the complete 5-stage training, evaluation, and drift pipeline
-RUN python -m scripts.run_pipeline
+RUN /opt/venv/bin/python -m scripts.run_pipeline
 
 # Verify that champion model and pipeline artifacts exist before proceeding
 RUN test -f artifacts/models/champion_model.joblib && \
     test -f artifacts/models/model_metadata.json && \
     test -f artifacts/reports/evaluation_metrics.json && \
     test -f artifacts/reports/drift_report.json && \
-    test -f data/processed/train.csv && \
-    test -f mlflow.db
+    test -f data/processed/train.csv
 
 # Stage 2: Production Serving Image
 FROM python:3.12-slim AS runner
@@ -75,18 +74,17 @@ RUN groupadd -r mlopsgroup && useradd -r -g mlopsgroup -u 10001 mlopsuser
 COPY src/ /app/src/
 COPY api/ /app/api/
 COPY configs/ /app/configs/
-COPY params.yaml /app/params.yaml
+COPY params.yaml ./params.yaml
 
 # Copy trained model artifacts, reports, datasets, and tracking database from builder
 COPY --from=builder /build/artifacts /app/artifacts
 COPY --from=builder /build/data /app/data
-COPY --from=builder /build/mlflow.db /app/mlflow.db
+COPY --from=builder /build/mlflow.db* /app/
 
 # Build-time verification inside runtime image
 RUN test -f /app/artifacts/models/champion_model.joblib && \
     test -f /app/artifacts/models/model_metadata.json && \
-    test -f /app/data/processed/train.csv && \
-    test -f /app/mlflow.db
+    test -f /app/data/processed/train.csv
 
 # Adjust file ownership to non-root user
 RUN chown -R mlopsuser:mlopsgroup /app
@@ -100,4 +98,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
 # Production entrypoint
-CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT}"]
+CMD ["sh", "-c", "/opt/venv/bin/uvicorn api.main:app --host 0.0.0.0 --port ${PORT}"]
