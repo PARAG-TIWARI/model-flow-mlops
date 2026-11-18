@@ -14,8 +14,8 @@
   },
   "sample_count": 1057,
   "artifacts": {
-    "confusion_matrix": "D:\\MLOps\\model-flow-mlops\\artifacts\\reports\\confusion_matrix.png",
-    "roc_curve": "D:\\MLOps\\model-flow-mlops\\artifacts\\reports\\roc_curve.png",
-    "feature_importance": "D:\\MLOps\\model-flow-mlops\\artifacts\\reports\\feature_importance.png"
+    "confusion_matrix": "artifacts/reports/confusion_matrix.png",
+    "roc_curve": "artifacts/reports/roc_curve.png",
+    "feature_importance": "artifacts/reports/feature_importance.png"
   }
 }

@@ -9,6 +9,7 @@ on:
       - "tests/**"
       - "scripts/**"
       - "configs/**"
+      - "frontend/**"
       - "params.yaml"
       - "dvc.yaml"
       - "dvc.lock"
@@ -22,9 +23,12 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   code-quality:
-    name: Lint & Code Style
+    name: Backend lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -42,11 +46,36 @@ jobs:
           pip install ruff==0.16.8
 
       - name: Run Ruff Linter
-        run: |
-          ruff check src api tests scripts
+        run: ruff check src api tests scripts
+
+  frontend-quality:
+    name: Frontend lint and build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run Frontend Lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Build Frontend
+        working-directory: frontend
+        run: npm run build
 
   test-and-validate:
-    name: Unit & Integration Tests
+    name: Data pipeline and backend tests
     runs-on: ubuntu-latest
     needs: code-quality
     env:
@@ -68,40 +97,25 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Data & Pipeline Preparation
+        shell: bash
         run: |
-          python scripts/run_pipeline.py 2>&1 | tee pipeline.log || {
-            EXIT_CODE=$?
-            echo "## Pipeline Failure (Exit Code: $EXIT_CODE)" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            cat pipeline.log >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            exit $EXIT_CODE
-          }
+          set -euo pipefail
+          python scripts/run_pipeline.py 2>&1 | tee pipeline.log
 
       - name: Execute Pytest Suite with Coverage
+        shell: bash
         run: |
-          pytest tests/ -v --tb=short --cov=src --cov=api --cov-report=term-missing 2>&1 | tee pytest.log || {
-            EXIT_CODE=$?
-            echo "## Pytest Failure (Exit Code: $EXIT_CODE)" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            cat pytest.log >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            exit $EXIT_CODE
-          }
+          set -euo pipefail
+          pytest tests/ -v --tb=short --cov=src --cov=api --cov-report=term-missing 2>&1 | tee pytest.log
 
       - name: Verify Clean-Room Originality
+        shell: bash
         run: |
-          python scripts/check_originality.py 2>&1 | tee originality.log || {
-            EXIT_CODE=$?
-            echo "## Originality Check Failure (Exit Code: $EXIT_CODE)" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            cat originality.log >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            exit $EXIT_CODE
-          }
+          set -euo pipefail
+          python scripts/check_originality.py 2>&1 | tee originality.log
 
   docker-build:
-    name: Build & Verify Docker Image
+    name: Build and smoke-test API image
     runs-on: ubuntu-latest
     needs: test-and-validate
     steps:
@@ -112,42 +126,66 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build Production Image
+        shell: bash
         run: |
-          docker build --progress=plain -t modelflow-mlops:latest . 2>&1 | tee docker_build.log || {
-            EXIT_CODE=$?
-            echo "## Docker Build Failure (Exit Code: $EXIT_CODE)" >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            cat docker_build.log >> $GITHUB_STEP_SUMMARY
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            exit $EXIT_CODE
-          }
+          set -euo pipefail
+          docker build --progress=plain -t modelflow-mlops:latest . 2>&1 | tee docker_build.log
 
       - name: Test Docker Container Ingestion & Serving
+        shell: bash
         run: |
+          set -Eeuo pipefail
+
+          cleanup() {
+            docker rm -f test-api >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
           docker run -d --name test-api -p 8000:8000 modelflow-mlops:latest
-          sleep 6
-          docker logs test-api
-          curl -f http://localhost:8000/health
-          curl -f http://localhost:8000/health/ready
-          curl -f http://localhost:8000/model
-          curl -f -X POST http://localhost:8000/predict \
+
+          ready=0
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://localhost:8000/health >/dev/null; then
+              ready=1
+              break
+            fi
+
+            running="$(docker inspect -f '{{.State.Running}}' test-api 2>/dev/null || echo false)"
+            if [ "$running" != "true" ]; then
+              docker logs test-api
+              exit 1
+            fi
+            sleep 2
+          done
+
+          if [ "$ready" -ne 1 ]; then
+            echo "API did not become healthy within 60 seconds."
+            docker logs test-api
+            exit 1
+          fi
+
+          curl --fail --show-error http://localhost:8000/health
+          curl --fail --show-error http://localhost:8000/health/ready
+          curl --fail --show-error http://localhost:8000/model
+          curl --fail --show-error -X POST http://localhost:8000/predict \
             -H "Content-Type: application/json" \
             -d '{"gender":"Female","SeniorCitizen":0,"Partner":"Yes","Dependents":"No","tenure":12,"PhoneService":"Yes","MultipleLines":"No","InternetService":"Fiber optic","OnlineSecurity":"No","OnlineBackup":"Yes","DeviceProtection":"No","TechSupport":"No","StreamingTV":"Yes","StreamingMovies":"Yes","Contract":"Month-to-month","PaperlessBilling":"Yes","PaymentMethod":"Electronic check","MonthlyCharges":89.85,"TotalCharges":1078.20}'
-          docker stop test-api
 
   deploy-staging:
-    name: Deploy to Production / Staging
+    name: Deploy to Render
     runs-on: ubuntu-latest
-    needs: [test-and-validate, docker-build]
+    needs: [test-and-validate, frontend-quality, docker-build]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - name: Trigger Render Deploy Hook
         env:
           RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        shell: bash
         run: |
+          set -euo pipefail
           if [ -n "$RENDER_DEPLOY_HOOK_URL" ]; then
-            echo "Triggering Render webhook deployment..."
-            curl -X POST "$RENDER_DEPLOY_HOOK_URL"
+            echo "Triggering Render deployment..."
+            curl --fail-with-body --silent --show-error --retry 2 -X POST "$RENDER_DEPLOY_HOOK_URL"
           else
             echo "No RENDER_DEPLOY_HOOK_URL configured in repository secrets. Skipping auto-deploy."
           fi

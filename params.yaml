@@ -36,7 +36,7 @@ features:
 
 models:
   logistic_regression:
-    name: "Calibrated Logistic Regression"
+    name: "Class-weighted Logistic Regression"
     type: "logistic_regression"
     C: 0.75
     max_iter: 1000

@@ -1,536 +1,238 @@
-<div align="center">
-
 # ModelFlow MLOps
 
-### Reproducible Machine Learning Training, Tracking, Serving and Monitoring Platform
+ModelFlow MLOps is a machine-learning engineering portfolio project for a binary customer-churn prediction workflow. It brings together data preparation, model comparison, experiment tracking, model packaging, API inference and basic drift/serving telemetry.
 
-**An enterprise-grade, end-to-end MLOps platform for predictive analytics and risk intelligence.**
+The project uses tabular customer-service data and scikit-learn models. It is intended to demonstrate an end-to-end ML workflow; it is not a production customer-retention system and has not been validated on a live telecom customer base.
 
-[![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-blue?logo=github-actions&logoColor=white)](https://github.com)
-[![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![MLflow](https://img.shields.io/badge/MLflow-3.x-0194E2?logo=mlflow&logoColor=white)](https://mlflow.org)
-[![DVC](https://img.shields.io/badge/DVC-Data%20Version-945DD6?logo=dvc&logoColor=white)](https://dvc.org)
-[![React](https://img.shields.io/badge/Frontend-React%2019%20%2B%20Vite-61DAFB?logo=react&logoColor=black)](https://vitejs.dev)
-[![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
+## Hosted application
 
-</div>
+The repository is configured with a Vercel frontend and a Render FastAPI service:
 
----
+- **Frontend dashboard:** [model-flow-mlops.vercel.app](https://model-flow-mlops.vercel.app)
+- **Backend API documentation:** [model-flow-mlops.onrender.com/docs](https://model-flow-mlops.onrender.com/docs)
+- **Backend health endpoint:** [model-flow-mlops.onrender.com/health](https://model-flow-mlops.onrender.com/health)
 
-## Overview
+The frontend is configured to call the Render service through `VITE_API_BASE_URL`. Hosted availability may vary with the deployment plan and service state; use the health endpoint to check the API before a demonstration.
 
-**ModelFlow MLOps** is a complete, production-oriented Machine Learning Engineering system designed to take raw enterprise data from ingestion to reproducible training, experiment tracking, containerized low-latency serving, and statistical live drift monitoring.
+## What the project demonstrates
 
-Built with a clean separation of concerns across data engineering, modeling, inference serving, and observability, ModelFlow demonstrates production-ready software engineering standards for machine learning practitioners.
-
----
-
-## Problem
-
-In enterprise environments, customer attrition (churn) directly erodes recurring revenue and customer lifetime value (LTV). However, traditional machine learning models in production suffer from:
-
-1. **Pipeline Irreproducibility**: Inability to deterministically reproduce dataset states, feature preprocessing transforms, and model weights across environments.
-2. **Experiment Chaos**: Lack of centralized experiment tracking, leading to opaque model selection and untracked hyperparameter modifications.
-3. **Serving Inefficiencies**: Fragile inference endpoints lacking input validation, standardized error handling, and latency tracking.
-4. **Silent Model Degradation**: Undetected distribution shifts (data drift) between training baselines and live inference streams.
-
----
-
-## Solution
-
-ModelFlow MLOps resolves these challenges through a modular, decoupled architecture:
-
-- **Reproducible Pipeline Orchestration**: DVC (`dvc.yaml`) automates and caches data ingestion, validation, preprocessing, training, evaluation, and drift analysis.
-- **Systematic Experiment Tracking**: MLflow logs candidate architectures, parameters, metrics, confusion matrix plots, and manages model artifacts.
-- **Production-Grade Serving**: FastAPI delivers low-latency inference (11.21 ms mean, 6.43 ms p50 verified locally) with Pydantic v2 validation, structured risk tiers, and OpenAPI documentation.
-- **Real-Time Telemetry & Drift Detection**: Automated statistical tests (Kolmogorov-Smirnov test and Population Stability Index for numerical features; Chi-Square for categorical features) monitor live inference payloads against baseline distributions.
-- **Interactive Monitoring Dashboard**: Modern React + TypeScript + Vite + Tailwind CSS interface displaying real-time metrics, live prediction simulator, and MLflow experiment leaderboards.
-
----
+- **Data ingestion and validation:** attempts to retrieve the Telco Customer Churn CSV used by IBM's sample; if that request fails, the current ingester generates synthetic data with a similar schema and a seeded churn-generation process.
+- **Preprocessing:** handles numeric and categorical fields in a scikit-learn `ColumnTransformer`, including median/mode imputation, standard scaling and one-hot encoding.
+- **Model comparison:** trains Logistic Regression, Random Forest and HistGradientBoosting candidates using class-weighted classifiers.
+- **Experiment tracking:** records candidate runs, parameters and metrics in MLflow.
+- **Artifact creation:** saves the selected scikit-learn pipeline with Joblib and writes model metadata.
+- **Inference API:** serves single-record and batch predictions through FastAPI, with churn probability, a risk tier and a suggested follow-up message.
+- **Monitoring demonstration:** collects in-memory request metrics and compares recent feature distributions against a reference dataset using PSI and, for numeric features, the two-sample Kolmogorov–Smirnov test.
+- **Reproducible workflow definition:** includes DVC stages and GitHub Actions checks.
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                       ModelFlow MLOps Architecture                          │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-   ┌────────────────┐      ┌─────────────────────────┐      ┌─────────────────────────┐
-   │  DATA LAYER    │      │   EXPERIMENT TRACKING   │      │    CI/CD AUTOMATION     │
-   │                │      │        (MLflow)         │      │    (GitHub Actions)     │
-   │ Raw Dataset    │      │                         │      │                         │
-   │ (7,043 rows)   │      │ Candidate Experiments   │      │  push / pull_request    │
-   │       │        │      │ ├─ Logistic Regression  │      │            │            │
-   │       ▼        │      │ ├─ Tuned Random Forest  │      │            ▼            │
-   │ DataValidator  │─────►│ └─ HistGradientBoosting │      │  Ruff Linter Check      │
-   │ (Schema/Types) │      │                         │      │            │            │
-   │       │        │      │ Automated Model Gate    │      │            ▼            │
-   │       ▼        │      │ (ROC-AUC >= 0.8200)     │      │  Pytest Suite (28 tests)│
-   │ Data Splits    │      │            │            │      │            │            │
-   │ Train/Val/Test │      │            ▼            │      │            ▼            │
-   └───────┬────────┘      │   Champion Promotion    │─────►│  Docker Build & Test    │
-           │               │   (artifacts/models/)   │      └─────────────────────────┘
-           ▼               └─────────────────────────┘
-   ┌────────────────┐
-   │  DVC PIPELINE  │
-   │  (dvc repro)   │
-   └────────────────┘
-
-                     ┌─────────────────────────────────────────┐
-                     │       MODEL SERVING  (FastAPI :8000)     │
-                     │                                         │
-                     │  GET  /health        Liveness probe     │
-                     │  GET  /model         Model metadata     │
-                     │  POST /predict       Real-time scoring  │
-                     │  POST /predict/batch Bulk inference     │
-                     │  GET  /metrics       Serving telemetry  │
-                     │  GET  /monitoring/drift Live drift check│
-                     └────────────────────┬────────────────────┘
-                                          │
-                                          ▼
-                     ┌─────────────────────────────────────────┐
-                     │      DATA DRIFT & QUALITY ASSURANCE     │
-                     │                                         │
-                     │  Kolmogorov-Smirnov 2-sample test       │
-                     │  Population Stability Index (PSI)       │
-                     │  Chi-Square Contingency analysis        │
-                     └─────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    SRC[Public CSV source, if reachable] --> ING[Data ingestion]
+    SYN[Synthetic fallback generator] --> ING
+    ING --> VAL[Schema and data validation]
+    VAL --> SPLIT[Stratified train / validation / test split]
+    SPLIT --> PRE[Preprocessing pipeline]
+    PRE --> CAND[Logistic Regression / Random Forest / HistGradientBoosting]
+    CAND --> SELECT[Select best validation ROC-AUC]
+    SELECT --> MLF[MLflow experiment tracking]
+    SELECT --> JOBLIB[Joblib champion artifact + metadata]
+    JOBLIB --> API[FastAPI serving API]
+    API --> MET[In-memory request and latency metrics]
+    API --> DRIFT[PSI / KS drift checks]
+    API --> UI[React + Vite dashboard]
 ```
 
----
+For more detail, see:
+- [Architecture and request flow](docs/architecture.md)
+- [Data provenance and reproducibility](docs/data-and-reproducibility.md)
+- [Evaluation and monitoring](docs/model-evaluation.md)
 
-## Pipeline Stages
+## Model development workflow
 
-The platform features 5 reproducible pipeline stages managed via `dvc.yaml`:
+The pipeline is configured in `params.yaml` and defined as five DVC stages in `dvc.yaml`:
 
-1. **`data_ingestion`**: Fetches or synthesizes the full benchmark dataset into `data/raw/telco_churn_raw.csv`.
-2. **`data_preprocessing`**: Cleans missing records, applies type safety, and performs stratified splitting (70% train, 15% val, 15% test).
-3. **`training`**: Trains 3 candidate architectures with cross-validation, logs runs to MLflow, and promotes the champion meeting the ROC-AUC gate.
-4. **`evaluation`**: Executes held-out evaluation on `test.csv`, outputting JSON metrics and diagnostic plots (`confusion_matrix.png`, `roc_curve.png`, `feature_importance.png`).
-5. **`drift_analysis`**: Evaluates statistical feature shifts across all 19 predictive attributes against the training baseline.
+1. Ingest the raw dataset or generate the synthetic fallback.
+2. Validate the schema, clean fields and create stratified 70% / 15% / 15% splits.
+3. Train three candidate classifiers and log their training/validation metrics.
+4. Evaluate the selected model on the held-out test split.
+5. Compare the test split with the training reference distribution for a drift demonstration.
 
-Execute the entire pipeline reproducibly:
+The selected model is the candidate with the highest validation ROC-AUC. The configured minimum ROC-AUC value is currently a **warning threshold**, not a hard deployment block: the training code still writes the champion artifact when the score is below it. See [model evaluation](docs/model-evaluation.md).
+
+## Stored evaluation artifact
+
+The committed `artifacts/reports/evaluation_metrics.json` currently records the following held-out test report:
+
+| Metric | Stored result |
+| --- | ---: |
+| Accuracy | 0.7474 |
+| Precision (Churn = Yes) | 0.5165 |
+| Recall (Churn = Yes) | 0.7794 |
+| F1 score | 0.6213 |
+| Macro F1 | 0.7159 |
+| ROC-AUC | 0.8447 |
+| PR-AUC | 0.6587 |
+| Test records | 1,057 |
+
+The report's confusion matrix is:
+
+| | Predicted: No churn | Predicted: Churn |
+| --- | ---: | ---: |
+| **Actual: No churn** | 571 | 205 |
+| **Actual: Churn** | 62 | 219 |
+
+These values are copied from the committed evaluation JSON, not newly generated during this documentation update. The repository's ingestion path can use either a downloaded CSV or synthetic fallback data, and the committed report does not record which path produced it. Until that provenance is captured for the specific run, do not describe these figures as a verified result on IBM's original dataset or on real customer data.
+
+## Dataset and features
+
+The target is `Churn` (Yes/No). The configured feature set contains:
+
+- **Numeric:** `tenure`, `MonthlyCharges`, `TotalCharges`
+- **Categorical:** customer profile, service, contract and payment attributes listed in `params.yaml`
+
+The current split configuration is stratified and uses random seed 42. See [data provenance and reproducibility](docs/data-and-reproducibility.md) for the source/fallback distinction and the DVC limitations.
+
+## API
+
+The FastAPI application is defined in `api/main.py`. Interactive Swagger documentation is available at `/docs` when the service is running.
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| GET | `/` | Service index |
+| GET | `/health` | Liveness / service status |
+| GET | `/health/ready` | Checks whether the model can be loaded |
+| GET | `/model` | Model metadata |
+| GET | `/model/features` | Expected numeric and categorical feature names |
+| POST | `/predict` | Single-customer churn prediction |
+| POST | `/predict/batch` | Batch prediction (up to 1,000 records) |
+| GET | `/metrics` | In-memory request and latency summary |
+| GET | `/monitoring/drift` | Drift check on recent buffered inferences, with a saved-report/test-split fallback |
+| GET | `/experiments` | Evaluation report and available MLflow runs |
+
+The API can start in standby mode if the model artifact is missing. In that case, the liveness route can still respond while the readiness route reports that the model is unavailable.
+
+## Local setup
+
+### 1. Create an environment and install backend dependencies
+
+Use Python 3.12:
+
+```bash
+python -m venv .venv
+
+# Windows PowerShell
+.venv\Scripts\Activate.ps1
+
+# macOS / Linux
+source .venv/bin/activate
+
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+### 2. Run the ML pipeline
+
+From the repository root:
+
+```bash
+python scripts/run_pipeline.py
+```
+
+This runs ingestion, validation/splitting, candidate training, test evaluation and drift analysis. The first run may need network access to fetch the configured CSV. If the request fails, the current implementation generates synthetic benchmark data instead. Review the logs and resulting data before reporting any metric.
+
+DVC stage execution is also defined:
+
 ```bash
 dvc repro
 ```
 
----
+The repository currently has no configured DVC remote, so DVC cache/data reproduction is local unless you configure a remote yourself. See [data provenance and reproducibility](docs/data-and-reproducibility.md).
 
-## Dataset
+### 3. Start the API
 
-The platform models customer retention using the **IBM Telco Customer Churn** benchmark dataset:
-
-- **Source**: IBM Watson Sample Open Dataset
-- **License**: Apache 2.0 / CC0 Public Domain
-- **Total Samples**: 7,043 customer accounts
-- **Target Variable**: `Churn` (Binary: `Yes` / `No`)
-- **Features (19 attributes)**:
-  - **Numerical**: `tenure` (months), `MonthlyCharges` ($), `TotalCharges` ($)
-  - **Categorical**: `gender`, `SeniorCitizen`, `Partner`, `Dependents`, `PhoneService`, `MultipleLines`, `InternetService`, `OnlineSecurity`, `OnlineBackup`, `DeviceProtection`, `TechSupport`, `StreamingTV`, `StreamingMovies`, `Contract`, `PaperlessBilling`, `PaymentMethod`
-- **Data Splits**:
-  - Training: 4,930 samples (70.0%, Churn rate: 26.5%)
-  - Validation: 1,056 samples (15.0%, Churn rate: 26.5%)
-  - Held-out Test: 1,057 samples (15.0%, Churn rate: 26.6%)
-
----
-
-## Model
-
-ModelFlow evaluates multiple competing model architectures before promoting the champion:
-
-1. **Calibrated Logistic Regression (Champion)**: Regularized linear classifier with balanced class weighting and probability calibration.
-2. **Tuned Random Forest (Challenger 1)**: Ensemble of 120 balanced decision trees with controlled max depth.
-3. **HistGradientBoosting Classifier (Challenger 2)**: Binned gradient-boosted decision tree pipeline for non-linear feature interactions.
-
-### Automated Promotion Gate
-To be promoted to production serving (`artifacts/models/champion_model.joblib`), a model must achieve `ROC-AUC >= 0.8200` on the validation set.
-
----
-
-## DVC
-
-Data and pipeline versioning are configured in `dvc.yaml` and parameterized through `params.yaml`:
-
-```yaml
-stages:
-  data_ingestion:
-    cmd: python -m src.data.ingest
-    outs:
-      - data/raw/telco_churn_raw.csv
-
-  data_preprocessing:
-    cmd: python -m src.data.loader
-    deps:
-      - data/raw/telco_churn_raw.csv
-    outs:
-      - data/processed/train.csv
-      - data/processed/val.csv
-      - data/processed/test.csv
-
-  training:
-    cmd: python -m src.training.trainer
-    outs:
-      - artifacts/models/champion_model.joblib
-      - artifacts/models/model_metadata.json
-
-  evaluation:
-    cmd: python -m src.evaluation.evaluator
-    metrics:
-      - artifacts/reports/evaluation_metrics.json:
-          cache: false
-
-  drift_analysis:
-    cmd: python -m src.monitoring.drift
-    outs:
-      - artifacts/reports/drift_report.json:
-          cache: false
-```
-
----
-
-## MLflow
-
-ModelFlow implements experiment tracking with SQLite backend storage (`sqlite:///mlflow.db`):
-
-- **Experiment Name**: `modelflow-customer-churn`
-- **Logged Parameters**: Model architecture, regularization `C`, tree estimators, learning rate, solver, training duration.
-- **Logged Metrics**: Train & Validation Accuracy, Precision, Recall, F1-Score, F1-Macro, ROC-AUC, PR-AUC, and Confusion Matrix cell counts.
-- **Artifacts**: Scikit-learn model signatures, confusion matrix plots, ROC curves, feature importance charts.
-
-Inspect runs via the MLflow UI:
 ```bash
-mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5000
+uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
----
+Open [http://localhost:8000/docs](http://localhost:8000/docs).
 
-## Evaluation
+### 4. Start the frontend
 
-Model evaluation is executed strictly on held-out test data (`test.csv`):
+In a second terminal:
 
-| Metric | Champion Score | Interpretation |
-|---|---|---|
-| **ROC-AUC** | **0.8447** | Excellent discrimination between retaining and churning customers |
-| **Accuracy** | **74.74%** | Overall correct classification rate under balanced weighting |
-| **Recall (Churn)** | **77.66%** | High sensitivity; captures over 77% of all churning accounts |
-| **F1-Score** | **0.6213** | Balanced harmonic mean of precision and recall |
-| **PR-AUC** | **0.6587** | Precision-Recall area under the curve |
+```bash
+cd frontend
+npm ci
+```
 
-### Out-of-Sample Confusion Matrix (1,057 Samples)
-- **True Negatives (Retained)**: 615
-- **False Positives (False Alarms)**: 161
-- **False Negatives (Missed Churn)**: 106
-- **True Positives (Caught Churn)**: 175
+Create `frontend/.env.local`:
 
-Artifacts generated:
-- `artifacts/reports/evaluation_metrics.json`
-- `artifacts/reports/confusion_matrix.png`
-- `artifacts/reports/roc_curve.png`
-- `artifacts/reports/feature_importance.png`
+```env
+VITE_API_BASE_URL=http://localhost:8000
+```
 
----
+Then run:
 
-## FastAPI
+```bash
+npm run dev
+```
 
-Production REST API built with FastAPI and Pydantic v2:
+The Vite development server is available at [http://localhost:5173](http://localhost:5173).
 
-- **Swagger Documentation**: `http://localhost:8000/docs`
-- **OpenAPI Schema**: `http://localhost:8000/openapi.json`
+## Tests and code quality
 
-### Endpoints
-- `GET /`: Platform index and service registry.
-- `GET /health`: Liveness probe with uptime and model residency check.
-- `GET /health/ready`: Readiness probe verifying model load status.
-- `GET /model`: Returns champion model metadata, hyperparameters, and feature specifications.
-- `GET /model/features`: Returns lists of expected numerical and categorical inputs.
-- `POST /predict`: Real-time inference returning churn prediction, calibrated probability, risk tier, and retention strategy.
-- `POST /predict/batch`: Bulk inference for up to 1,000 records.
-- `GET /metrics`: Serving telemetry (request counts, error rate, p50/p95/p99 latencies, prediction ratios).
-- `GET /monitoring/drift`: Statistical feature drift report (PSI & KS-test).
-- `GET /experiments`: Comparison of candidate MLflow training runs.
+Run backend tests and linting from the repository root:
 
----
+```bash
+pytest tests/ -v --tb=short
+ruff check src api tests scripts
+```
 
-## Monitoring
+Build/lint the frontend from `frontend/`:
 
-ModelFlow implements an in-memory, thread-safe metrics collector (`MetricsCollector`) and statistical drift detector (`DriftDetector`):
+```bash
+npm run lint
+npm run build
+```
 
-- **Operational Telemetry**:
-  - Request counters and error tracking
-  - Latency percentiles: min, mean, p50, p95, p99, max
-  - Class distribution (predicted churn rate vs retained)
-- **Data Drift Detection**:
-  - **Numerical Features**: Two-sample Kolmogorov-Smirnov test (`scipy.stats.ks_2samp`) and Population Stability Index (PSI).
-  - **Categorical Features**: Chi-Square contingency analysis and categorical PSI.
-  - **Alert Thresholds**: Alert triggered if PSI exceeds `0.150` or KS p-value falls below `0.05`.
+The GitHub Actions workflow also runs the pipeline, test suite and Docker build. No claim is made here that these checks were executed as part of this documentation update; use the current Actions run for the latest result.
 
----
+## CI/CD workflow
+
+GitHub Actions is configured in `.github/workflows/ci_cd.yml`. The workflow is intended to:
+
+1. Run backend Ruff linting.
+2. Run the data pipeline, backend tests and originality check.
+3. Run frontend linting and a production Vite build.
+4. Build the Docker image and smoke-test its API endpoints.
+5. Trigger Render deployment on a push to `main`, after the validation jobs pass and when `RENDER_DEPLOY_HOOK_URL` is configured.
+
+The previous Docker build failure was caused by the churn target retaining a pandas string dtype before a mean calculation. The current review branch adds dtype-independent target normalisation, regression tests and fail-fast shell handling for piped commands. The updated CI result is the source of truth for whether the fix has passed; do not treat the pipeline as green until the new GitHub Actions run completes successfully.
 
 ## Docker
 
-Production multi-stage `Dockerfile`:
-- **Builder Stage**: Installs pinned dependencies, executes the end-to-end training pipeline (`python -m scripts.run_pipeline`), and runs build-time assertions verifying `champion_model.joblib`, `model_metadata.json`, and reference datasets.
-- **Runner Stage**: Minimal `python:3.12-slim` image that copies verified artifacts, datasets, and MLflow SQLite database from the builder stage, running under an unprivileged user (`mlopsuser:mlopsgroup`).
-- **Healthcheck**: Configured `HEALTHCHECK` instruction using curl.
+The multi-stage Dockerfile runs the complete ML pipeline during the **image build** before assembling the serving image. This means a Docker build can take time, install the training dependencies, attempt a dataset download or use the synthetic fallback, and generate model artifacts. It is not just a lightweight packaging step.
 
-Run with Docker Compose:
 ```bash
 docker compose up --build
 ```
 
----
+The Compose file starts the API and a separate MLflow service. There is a configuration detail to review before relying on remote MLflow tracking in Compose: the training registry and experiments route currently read the tracking URI from `params.yaml`, while Compose supplies `MLFLOW_TRACKING_URI` through the environment. Verify that the URI actually used by the code matches the intended MLflow service before presenting this as a connected remote tracking setup.
 
-## CI/CD
+## Current limitations and next engineering steps
 
-Automated GitHub Actions pipeline (`.github/workflows/ci_cd.yml`):
+- **Dataset provenance:** the ingestion code does not currently write a manifest saying whether a run used the downloaded CSV or synthetic fallback.
+- **DVC sharing:** no remote is configured in `.dvc/config`; DVC cache is local to the machine until a remote is set up.
+- **Promotion threshold:** the ROC-AUC threshold currently logs a warning but does not prevent champion artifact creation.
+- **MLflow integration:** the default tracking URI comes from `params.yaml`; reconcile this with environment-based Compose configuration before relying on the separate tracking service.
+- **Drift monitoring:** recent inference samples are buffered in memory (up to 1,000 records) and reset when the API process restarts. It is a project demonstration, not persistent production observability.
+- **Deployment CORS:** replace wildcard origins with the specific frontend origin(s) before exposing a hosted API.
+- **Docker build cost:** training during image build can make builds slower and dependent on the current data source; a later improvement could separate model training/artifact creation from serving-image construction.
 
-1. **Lint & Code Style**: Enforces PEP 8 standards with `ruff check`.
-2. **Unit & Integration Tests**: Executes 28 tests via `pytest` with coverage reporting.
-3. **Data & Pipeline Verification**: Verifies end-to-end reproducibility of training and evaluation stages.
-4. **Clean-Room Originality Audit**: Scans repository to verify zero reference remnants.
-5. **Docker Container Build**: Verifies that the production Docker image compiles cleanly.
-6. **Deployment Webhook**: Triggers Render deployment on pushes to `main`.
+These limitations are useful follow-up engineering work and should be explained honestly in a technical discussion.
 
----
+## Licence
 
-## Testing
-
-Comprehensive test suite covering unit math, schema validation, and API integration:
-
-```bash
-pytest tests/ -v --tb=short
-```
-
-**Execution Results**:
-```
-tests/integration/test_api_endpoints.py::test_root_endpoint PASSED
-tests/integration/test_api_endpoints.py::test_health_endpoint PASSED
-tests/integration/test_api_endpoints.py::test_model_features_endpoint PASSED
-tests/integration/test_api_endpoints.py::test_predict_endpoint_success PASSED
-tests/integration/test_api_endpoints.py::test_predict_endpoint_validation_error PASSED
-tests/integration/test_api_endpoints.py::test_predict_batch_endpoint PASSED
-tests/integration/test_api_endpoints.py::test_metrics_endpoint PASSED
-tests/integration/test_api_endpoints.py::test_drift_endpoint PASSED
-tests/integration/test_api_endpoints.py::test_experiments_endpoint PASSED
-tests/integration/test_pipeline_flow.py::test_end_to_end_mini_pipeline PASSED
-tests/unit/test_data_validation.py::test_data_validator_valid_dataset PASSED
-tests/unit/test_data_validation.py::test_data_validator_missing_column PASSED
-tests/unit/test_data_validation.py::test_data_validator_negative_values PASSED
-tests/unit/test_data_validation.py::test_data_validator_empty_dataframe PASSED
-tests/unit/test_drift.py::test_compute_psi_identical_distributions PASSED
-tests/unit/test_drift.py::test_compute_psi_shifted_distribution PASSED
-tests/unit/test_drift.py::test_drift_detector_clean_data PASSED
-tests/unit/test_evaluation.py::test_compute_classification_metrics_perfect_predictions PASSED
-tests/unit/test_evaluation.py::test_compute_classification_metrics_partial_accuracy PASSED
-tests/unit/test_metrics_collector.py::test_metrics_collector_empty PASSED
-tests/unit/test_metrics_collector.py::test_metrics_collector_record_prediction PASSED
-tests/unit/test_metrics_collector.py::test_metrics_collector_recent_dataframe PASSED
-tests/unit/test_model_manager.py::test_model_manager_info PASSED
-tests/unit/test_model_manager.py::test_model_manager_missing_file PASSED
-tests/unit/test_predictor.py::test_determine_risk_tier PASSED
-tests/unit/test_preprocessing.py::test_feature_engineer_transform PASSED
-tests/unit/test_preprocessing.py::test_build_preprocessor_shape PASSED
-tests/unit/test_preprocessing.py::test_preprocessor_feature_names_out PASSED
-
-============================= 28 passed in 2.89s ==============================
-```
-
----
-
-## Deployment
-
-- **Backend (FastAPI)**: Configured for Render via `render.yaml` with `runtime: docker` using multi-stage `Dockerfile`. Binds dynamically to `0.0.0.0:$PORT`.
-- **Frontend (Vite + React)**: Configured for Vercel via `vercel.json` with client-side SPA routing.
-- **Environment Configuration**: Set `VITE_API_BASE_URL` in the frontend (e.g. `https://model-flow-mlops.onrender.com`) to point to the production backend URL. Render web service permits CORS requests from `https://model-flow-mlops.vercel.app`.
-
----
-
-## Project Structure
-
-```
-model-flow-mlops/
-├── src/
-│   ├── config/              # Application settings & YAML loaders
-│   ├── data/                # Ingestion, validation, and split loaders
-│   ├── features/            # Scikit-Learn ColumnTransformer & feature engineering
-│   ├── training/            # Model pipeline factory, trainer, and MLflow registry
-│   ├── evaluation/          # Classification metrics & diagnostic plot generators
-│   ├── serving/             # Model lifecycle manager & inference predictor
-│   └── monitoring/          # Statistical drift detector (KS/PSI) & operational metrics
-│
-├── api/
-│   ├── routes/              # Health, model, predict, and metrics endpoints
-│   ├── schemas/             # Pydantic v2 request and response contracts
-│   └── main.py              # FastAPI application entrypoint
-│
-├── frontend/                # React 19 + TypeScript + Vite + Tailwind CSS dashboard
-│   ├── src/
-│   │   ├── components/      # Navigation and UI components
-│   │   ├── pages/           # Home, Model, Prediction, Experiments, System
-│   │   └── services/        # Typed API service client
-│   └── package.json
-│
-├── tests/
-│   ├── unit/                # Unit tests for preprocessing, models, and drift
-│   ├── integration/         # REST API endpoint and pipeline flow tests
-│   └── conftest.py          # Pytest fixtures and mock payloads
-│
-├── scripts/
-│   ├── run_pipeline.py      # End-to-end Python pipeline runner
-│   ├── simulate_inference.py# Traffic simulator for live metrics demonstration
-│   └── check_originality.py # Clean-room compliance auditor
-│
-├── configs/                 # Project & model configuration YAML
-├── params.yaml              # DVC parameters file
-├── dvc.yaml                 # DVC reproducible pipeline stages
-├── Dockerfile               # Multi-stage production container
-├── docker-compose.yml       # API + MLflow service orchestration
-├── render.yaml              # Render web service configuration
-├── vercel.json              # Vercel SPA routing configuration
-├── requirements.txt         # Pinned production Python dependencies
-└── README.md
-```
-
----
-
-## Local Setup
-
-### 1. Clone & Set Up Environment
-```bash
-git clone <your-repo-url> model-flow-mlops
-cd model-flow-mlops
-
-python -m venv .venv
-# On Windows:
-.venv\Scripts\activate
-# On Linux/macOS:
-source .venv/bin/activate
-
-pip install -r requirements.txt
-```
-
-### 2. Execute Data & Training Pipeline
-```bash
-python -m scripts.run_pipeline
-# Or using DVC:
-dvc repro
-```
-
-### 3. Launch Backend Inference Server
-```bash
-uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
-```
-API Documentation available at: `http://localhost:8000/docs`
-
-### 4. Launch Frontend Dashboard
-```bash
-cd frontend
-npm install
-npm run dev
-```
-Dashboard available at: `http://localhost:3000`
-
----
-
-## Environment Variables
-
-Copy `.env.example` to `.env` to customize settings:
-
-| Variable | Default | Description |
-|---|---|---|
-| `ENVIRONMENT` | `production` | Deployment environment (`development` / `production`) |
-| `HOST` | `0.0.0.0` | Host IP for serving |
-| `PORT` | `8000` | Server listening port |
-| `MODEL_PATH` | `artifacts/models/champion_model.joblib` | Path to promoted champion model |
-| `METADATA_PATH` | `artifacts/models/model_metadata.json` | Path to model metadata JSON |
-| `REFERENCE_DATA_PATH` | `data/processed/train.csv` | Baseline dataset for drift detection |
-| `MLFLOW_TRACKING_URI` | `sqlite:///mlflow.db` | MLflow tracking database URI |
-| `PSI_DRIFT_THRESHOLD` | `0.15` | PSI threshold triggering drift alert |
-| `KS_ALPHA` | `0.05` | P-value threshold for Kolmogorov-Smirnov test |
-
----
-
-## API Usage
-
-### Single Customer Prediction
-```bash
-curl -X POST http://localhost:8000/predict \
-  -H "Content-Type: application/json" \
-  -d '{
-    "gender": "Female",
-    "SeniorCitizen": 0,
-    "Partner": "Yes",
-    "Dependents": "No",
-    "tenure": 12,
-    "PhoneService": "Yes",
-    "MultipleLines": "No",
-    "InternetService": "Fiber optic",
-    "OnlineSecurity": "No",
-    "OnlineBackup": "Yes",
-    "DeviceProtection": "No",
-    "TechSupport": "No",
-    "StreamingTV": "Yes",
-    "StreamingMovies": "Yes",
-    "Contract": "Month-to-month",
-    "PaperlessBilling": "Yes",
-    "PaymentMethod": "Electronic check",
-    "MonthlyCharges": 89.85,
-    "TotalCharges": 1078.20
-  }'
-```
-
-**Response**:
-```json
-{
-  "prediction": "Yes",
-  "churn_probability": 0.7421,
-  "confidence": 0.7421,
-  "risk_tier": "High Risk",
-  "recommendation": "Customer shows severe churn indicators. Immediate retention intervention recommended.",
-  "model_version": "1.0.0",
-  "model_name": "Calibrated Logistic Regression",
-  "latency_ms": 2.15
-}
-```
-
----
-
-## Results
-
-ModelFlow achieves competitive retention classification on the standard Telco benchmark:
-
-- **Validation ROC-AUC**: `0.8448`
-- **Held-out Test ROC-AUC**: `0.8447`
-- **Held-out Recall**: `77.66%`
-- **Inference Latency (LOCAL Verification Results)**:
-  - **Sample Benchmark**: 50 real inference requests
-  - **Success Rate**: 100%
-  - **Mean Latency**: 11.21 ms
-  - **P50 Latency**: 6.43 ms
-  - **P95 Latency**: 22.80 ms
-  - **P99 Latency**: 39.04 ms
-- **Test Pass Rate**: `100% (28/28 passing)`
-- **Clean-Room Audit**: `0 reference remnants found`
-
----
-
-## Limitations
-
-- **Host Docker Daemon**: While `Dockerfile` and `docker-compose.yml` are written to production standards and syntax-validated, Docker daemon execution depends on Docker Desktop being installed on the host OS.
-- **Local SQLite Tracking**: In local development, MLflow utilizes SQLite (`mlflow.db`). Production deployments should target managed PostgreSQL and S3 artifact storage.
-
----
-
-## Future Work
-
-- [ ] Automated continuous retraining triggers upon detecting statistical drift alerts.
-- [ ] Integration with cloud object storage (AWS S3 / GCP Cloud Storage) for DVC remote caching.
-- [ ] SHAP (SHapley Additive exPlanations) values returned directly in the REST API payload for real-time per-feature explainability.
-- [ ] Canary deployment and traffic shadowing via Kubernetes and Istio.
-
----
-
-## License
-
-This project is licensed under the Apache License 2.0.
+The repository code is licensed under Apache-2.0; see [LICENSE](LICENSE). This does not automatically establish the licence of any external dataset downloaded by the ingestion script.
