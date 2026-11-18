@@ -4,6 +4,16 @@ ModelFlow MLOps is a machine-learning engineering portfolio project for a binary
 
 The project uses tabular customer-service data and scikit-learn models. It is intended to demonstrate an end-to-end ML workflow; it is not a production customer-retention system and has not been validated on a live telecom customer base.
 
+## Hosted application
+
+The repository is configured with a Vercel frontend and a Render FastAPI service:
+
+- **Frontend dashboard:** [model-flow-mlops.vercel.app](https://model-flow-mlops.vercel.app)
+- **Backend API documentation:** [model-flow-mlops.onrender.com/docs](https://model-flow-mlops.onrender.com/docs)
+- **Backend health endpoint:** [model-flow-mlops.onrender.com/health](https://model-flow-mlops.onrender.com/health)
+
+The frontend is configured to call the Render service through `VITE_API_BASE_URL`. Hosted availability may vary with the deployment plan and service state; use the health endpoint to check the API before a demonstration.
+
 ## What the project demonstrates
 
 - **Data ingestion and validation:** attempts to retrieve the Telco Customer Churn CSV used by IBM's sample; if that request fails, the current ingester generates synthetic data with a similar schema and a seeded churn-generation process.
