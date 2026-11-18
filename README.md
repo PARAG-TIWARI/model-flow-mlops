@@ -199,6 +199,18 @@ npm run build
 
 The GitHub Actions workflow also runs the pipeline, test suite and Docker build. No claim is made here that these checks were executed as part of this documentation update; use the current Actions run for the latest result.
 
+## CI/CD workflow
+
+GitHub Actions is configured in `.github/workflows/ci_cd.yml`. The workflow is intended to:
+
+1. Run backend Ruff linting.
+2. Run the data pipeline, backend tests and originality check.
+3. Run frontend linting and a production Vite build.
+4. Build the Docker image and smoke-test its API endpoints.
+5. Trigger Render deployment on a push to `main`, after the validation jobs pass and when `RENDER_DEPLOY_HOOK_URL` is configured.
+
+The previous Docker build failure was caused by the churn target retaining a pandas string dtype before a mean calculation. The current review branch adds dtype-independent target normalisation, regression tests and fail-fast shell handling for piped commands. The updated CI result is the source of truth for whether the fix has passed; do not treat the pipeline as green until the new GitHub Actions run completes successfully.
+
 ## Docker
 
 The multi-stage Dockerfile runs the complete ML pipeline during the **image build** before assembling the serving image. This means a Docker build can take time, install the training dependencies, attempt a dataset download or use the synthetic fallback, and generate model artifacts. It is not just a lightweight packaging step.
