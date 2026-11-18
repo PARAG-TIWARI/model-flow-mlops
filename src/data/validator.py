@@ -17,6 +17,7 @@ logger = logging.getLogger("modelflow.data.validator")
 @dataclass
 class ValidationResult:
     """Encapsulates validation outcome and diagnostic details."""
+
     is_valid: bool
     row_count: int
     column_count: int
@@ -26,7 +27,7 @@ class ValidationResult:
 
 
 class DataValidator:
-    """Validates tabular churn datasets against production specifications."""
+    """Validates tabular churn datasets against project specifications."""
 
     def __init__(self, params: Optional[Dict] = None):
         self.params = params or load_yaml_params()
@@ -36,7 +37,7 @@ class DataValidator:
         self.target_col = self.params.get("data", {}).get("target_column", "Churn")
 
     def validate(self, df: pd.DataFrame, is_training: bool = True) -> ValidationResult:
-        """Run full battery of structural and statistical integrity checks."""
+        """Run structural and statistical integrity checks."""
         errors: List[str] = []
         warnings: List[str] = []
 
@@ -48,7 +49,7 @@ class DataValidator:
                 errors=["Dataset is empty"],
             )
 
-        # 1. Check required feature columns
+        # 1. Check required feature columns.
         expected_features = self.numerical_cols + self.categorical_cols
         missing_features = [col for col in expected_features if col not in df.columns]
         if missing_features:
@@ -57,17 +58,23 @@ class DataValidator:
         if is_training and self.target_col not in df.columns:
             errors.append(f"Training dataset missing target column '{self.target_col}'")
 
-        # 2. Check null values
+        # 2. Check null values.
         null_counts = df.isnull().sum().to_dict()
         for col, count in null_counts.items():
             if count > 0:
                 pct = (count / len(df)) * 100
-                if pct > 10.0:
-                    errors.append(f"Column '{col}' has excessive missing values: {count} ({pct:.1f}%)")
+                if col == self.target_col and is_training:
+                    errors.append(f"Target column '{col}' contains {count} missing values")
+                elif pct > 10.0:
+                    errors.append(
+                        f"Column '{col}' has excessive missing values: {count} ({pct:.1f}%)"
+                    )
                 else:
-                    warnings.append(f"Column '{col}' contains {count} ({pct:.1f}%) missing values")
+                    warnings.append(
+                        f"Column '{col}' contains {count} ({pct:.1f}%) missing values"
+                    )
 
-        # 3. Numeric range checks
+        # 3. Numeric range checks.
         for num_col in self.numerical_cols:
             if num_col in df.columns:
                 series = pd.to_numeric(df[num_col], errors="coerce")
@@ -76,24 +83,36 @@ class DataValidator:
                 if (series < 0).any():
                     errors.append(f"Negative values found in column '{num_col}' (must be >= 0)")
 
-        # 4. Target distribution check (if training)
+        # 4. Validate accepted target representations consistently with the cleaner.
+        # Accept Yes/No labels (case/whitespace-insensitive) or numeric 0/1 values.
         if is_training and self.target_col in df.columns:
-            unique_targets = set(df[self.target_col].dropna().unique())
-            valid_targets = {"Yes", "No", 0, 1}
-            if not unique_targets.issubset(valid_targets):
-                errors.append(f"Invalid target values found: {unique_targets - valid_targets}")
+            target = df[self.target_col]
+            normalized = target.astype("string").str.strip().str.lower()
+            label_valid = normalized.isin(["yes", "no"])
+            numeric = pd.to_numeric(target, errors="coerce")
+            numeric_valid = numeric.isin([0, 1])
+            valid_target = (label_valid | numeric_valid).fillna(False)
+            invalid_mask = ~valid_target
+
+            if invalid_mask.any():
+                invalid_values = target[invalid_mask].drop_duplicates().tolist()
+                errors.append(f"Invalid target values found: {invalid_values}")
 
         is_valid = len(errors) == 0
         if is_valid:
-            logger.info(f"Data validation passed successfully: {len(df)} rows, {len(df.columns)} columns.")
+            logger.info(
+                "Data validation passed successfully: %s rows, %s columns.",
+                len(df),
+                len(df.columns),
+            )
         else:
-            logger.error(f"Data validation failed with {len(errors)} errors: {errors}")
+            logger.error("Data validation failed with %s errors: %s", len(errors), errors)
 
         return ValidationResult(
             is_valid=is_valid,
             row_count=len(df),
             column_count=len(df.columns),
-            missing_values={k: v for k, v in null_counts.items() if v > 0},
+            missing_values={key: value for key, value in null_counts.items() if value > 0},
             errors=errors,
             warnings=warnings,
         )
