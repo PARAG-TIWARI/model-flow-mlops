@@ -1,32 +1,48 @@
-# React + TypeScript + Vite
+# ModelFlow dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+This directory contains the React + Vite frontend for the ModelFlow MLOps API.
 
-Currently, two official plugins are available:
+The dashboard provides pages for:
+- Overview and service status
+- Model metadata and expected input features
+- Single-record churn prediction
+- MLflow experiment comparison
+- System and serving telemetry
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Local development
 
-## React Compiler
+From the repository root, start the API first:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Then open this directory and install the locked dependencies:
+
+```bash
+cd frontend
+npm ci
+```
+
+Create `.env.local`:
+
+```env
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+Start the Vite development server:
+
+```bash
+npm run dev
+```
+
+The dashboard normally runs at `http://localhost:5173`. API requests are sent to the base URL configured by `VITE_API_BASE_URL`.
+
+## Quality checks
+
+```bash
+npm run lint
+npm run build
+```
+
+Use the root README and the API's `/docs` route for backend setup and API details.
