@@ -16,6 +16,37 @@ def test_data_validator_valid_dataset(sample_benchmark_dataframe):
     assert result.row_count == len(sample_benchmark_dataframe)
 
 
+
+@pytest.mark.parametrize(
+    "target_values",
+    [
+        pd.Series([" yes ", "No"], dtype="string"),
+        pd.Series(["1", "0"], dtype="string"),
+        pd.Series([1, 0], dtype="Int64"),
+    ],
+)
+def test_data_validator_accepts_supported_target_representations(sample_benchmark_dataframe, target_values):
+    """Accept case/whitespace-normalized labels and numeric 0/1 values."""
+    frame = sample_benchmark_dataframe.iloc[:2].copy()
+    frame["Churn"] = target_values.reset_index(drop=True)
+
+    result = DataValidator().validate(frame, is_training=True)
+
+    assert result.is_valid is True
+    assert result.errors == []
+
+
+def test_data_validator_rejects_invalid_target_values(sample_benchmark_dataframe):
+    """Reject values that the data cleaner cannot map to binary churn labels."""
+    frame = sample_benchmark_dataframe.iloc[:2].copy()
+    frame["Churn"] = pd.Series(["Yes", "Maybe"], dtype="string")
+
+    result = DataValidator().validate(frame, is_training=True)
+
+    assert result.is_valid is False
+    assert any("Invalid target values" in error for error in result.errors)
+
+
 def test_data_validator_missing_column(sample_benchmark_dataframe):
     """Test validator rejects dataframe missing a required feature."""
     broken_df = sample_benchmark_dataframe.drop(columns=["tenure"])
